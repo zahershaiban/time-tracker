@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Time Tracker — Study, Work &amp; Free Time</title>
+  <link
+    rel="icon"
+    type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0%25' stop-color='%236366f1'/%3E%3Cstop offset='100%25' stop-color='%23ec4899'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='64' height='64' rx='16' fill='url(%23g)'/%3E%3Ccircle cx='32' cy='32' r='20' fill='none' stroke='rgba(255,255,255,0.28)' stroke-width='3'/%3E%3Cpath d='M32 12 A20 20 0 0 1 52 32' fill='none' stroke='%23ffffff' stroke-width='3.5' stroke-linecap='round'/%3E%3Cpath d='M32 32 L32 20 M32 32 L41 37' stroke='%23ffffff' stroke-width='3.5' stroke-linecap='round'/%3E%3Ccircle cx='32' cy='32' r='3.5' fill='%23ffffff'/%3E%3C/svg%3E"
+  />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Animated Ambient Mesh Background -->
+  <div class="bg-ambient" aria-hidden="true">
+    <span class="ambient-orb orb-1"></span>
+    <span class="ambient-orb orb-2"></span>
+    <span class="ambient-orb orb-3"></span>
+    <span class="ambient-orb orb-4"></span>
+    <span class="ambient-grid"></span>
+  </div>
+
+  <div class="app-shell">
+    <!-- Clean Topbar -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon" aria-hidden="true">
+          <svg class="brand-logo-svg" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="brandBgGrad" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#6366f1" />
+                <stop offset="55%" stop-color="#8b5cf6" />
+                <stop offset="100%" stop-color="#ec4899" />
+              </linearGradient>
+              <linearGradient id="brandArcGrad" x1="8" y1="8" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#ffffff" />
+                <stop offset="100%" stop-color="#a5f3fc" />
+              </linearGradient>
+            </defs>
+            <rect x="2" y="2" width="44" height="44" rx="13" fill="url(#brandBgGrad)" />
+            <circle cx="24" cy="24" r="15" stroke="rgba(255,255,255,0.24)" stroke-width="2.2" />
+            <g class="logo-orbit">
+              <path d="M24 9 A15 15 0 0 1 39 24" stroke="url(#brandArcGrad)" stroke-width="2.8" stroke-linecap="round" />
+              <circle cx="39" cy="24" r="2.1" fill="#ffffff" />
+            </g>
+            <path d="M24 12.5V14.2M24 33.8V35.5M12.5 24H14.2M33.8 24H35.5" stroke="rgba(255,255,255,0.6)" stroke-width="1.6" stroke-linecap="round" />
+            <path class="logo-hand-hour" d="M24 24L24 16.5" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" />
+            <path class="logo-hand-min" d="M24 24L30.5 27.5" stroke="rgba(255,255,255,0.92)" stroke-width="2.1" stroke-linecap="round" />
+            <circle cx="24" cy="24" r="2.6" fill="#ffffff" />
+          </svg>
+        </div>
+        <div>
+          <h1>Time Tracker</h1>
+          <p class="subtitle">Studying · Work · Free Time</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <span id="saveIndicator" class="status-pill">Saved locally</span>
+        <button id="themeToggleBtn" class="btn btn-ghost btn-sm" type="button" title="Toggle light/dark theme">☀ Light</button>
+        <button id="dataSyncBtn" class="btn btn-ghost btn-sm" type="button" title="Backup, export, and sync settings">
+          <span id="driveStatusDot" class="drive-dot drive-dot-off" aria-hidden="true"></span>
+          <span id="driveStatusLabel">Data &amp; Sync</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- First-run Welcome Banner -->
+    <div id="welcomeBanner" class="welcome-banner hidden" role="region" aria-label="Welcome">
+      <div class="welcome-copy">
+        <strong>Welcome!</strong> Track your own study modules, work, and free time — saved automatically.
+      </div>
+      <div class="welcome-actions">
+        <button id="welcomeCustomizeBtn" class="btn btn-primary btn-sm" type="button">Customize Modules</button>
+        <button id="dismissWelcomeBtn" class="icon-close-btn" type="button" aria-label="Dismiss welcome banner">&times;</button>
+      </div>
+    </div>
+
+    <!-- Pinned Hero Timer Bar (Toggl / solidtime / Pomotroid inspired) -->
+    <section class="card hero-timer" aria-label="Live timer">
+      <div class="hero-top-row">
+        <div class="hero-note-wrap">
+          <input
+            id="timerNote"
+            type="text"
+            class="hero-note-input"
+            placeholder="What are you working on?"
+            maxlength="120"
+            aria-label="Current session note"
+          />
+          <div class="hero-meta">
+            <span id="activeCategoryLabel" class="active-cat-chip">Innovation · Studying</span>
+            <span id="timerStatusBadge" class="badge badge-idle">Idle</span>
+          </div>
+        </div>
+
+        <div class="hero-right">
+          <div id="timerDisplay" class="timer-display">00:00:00</div>
+          <div class="timer-controls">
+            <button id="startPauseBtn" class="btn btn-primary" type="button">Start</button>
+            <button id="saveSessionBtn" class="btn btn-success" type="button" disabled>Save</button>
+            <button id="resetTimerBtn" class="btn btn-danger-ghost" type="button" disabled title="Reset timer">Reset</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="hero-bottom-row">
+        <div id="categoryPillsWrap" class="category-pills-wrap" role="group" aria-label="Categories"></div>
+        <span class="kbd-hint" aria-hidden="true"><kbd>Space</kbd> start / pause</span>
+      </div>
+    </section>
+
+    <!-- 3 Clean Navigation Tabs -->
+    <nav class="view-nav" role="tablist" aria-label="Main sections">
+      <button class="view-tab active" data-view="analytics" role="tab" aria-selected="true" type="button">Analytics</button>
+      <button class="view-tab" data-view="log" role="tab" aria-selected="false" type="button">Log</button>
+      <button class="view-tab" data-view="goals" role="tab" aria-selected="false" type="button">Goals</button>
+    </nav>
+
+    <!-- VIEW 1: Analytics (Default) -->
+    <main id="viewAnalytics" class="view-panel">
+      <div class="range-bar">
+        <div class="range-tabs" role="tablist" aria-label="Time range">
+          <button class="range-tab" data-range="today" type="button">Today</button>
+          <button class="range-tab active" data-range="week" type="button">Last 7 Days</button>
+          <button class="range-tab" data-range="month" type="button">Last 30 Days</button>
+          <button class="range-tab" data-range="all" type="button">All Time</button>
+        </div>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="card kpi-card">
+          <span class="kpi-label">Total Tracked</span>
+          <strong id="kpiTotal" class="kpi-value">0h 00m</strong>
+          <span id="kpiCount" class="kpi-sub">0 sessions</span>
+        </div>
+        <div class="card kpi-card kpi-study">
+          <span class="kpi-label">Studying</span>
+          <strong id="kpiStudy" class="kpi-value">0h 00m</strong>
+          <span id="kpiStudyPct" class="kpi-sub">0% of total</span>
+        </div>
+        <div class="card kpi-card kpi-work">
+          <span class="kpi-label">Work</span>
+          <strong id="kpiWork" class="kpi-value">0h 00m</strong>
+          <span id="kpiWorkPct" class="kpi-sub">0% of total</span>
+        </div>
+        <div class="card kpi-card kpi-free">
+          <span class="kpi-label">Free Time</span>
+          <strong id="kpiFree" class="kpi-value">0h 00m</strong>
+          <span id="kpiFreePct" class="kpi-sub">0% of total</span>
+        </div>
+      </div>
+
+      <div class="insights-grid" aria-label="Quick insights">
+        <div class="card insight-card">
+          <div class="insight-head">
+            <svg class="insight-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 2c.7 3.2-1.8 5.2-1.8 7.8 0 1.4 1 2.4 2.3 2.4 1.5 0 2.6-1.3 2.6-3.1 2.4 1.6 3.9 4.1 3.9 6.7a7 7 0 1 1-14 0c0-3.2 1.9-6.2 4.8-8.1-.1 1.3.4 2.5 1.2 3.1C11 7.6 11.4 4.8 12 2Z" />
+            </svg>
+            <span class="kpi-label">Study Streak</span>
+          </div>
+          <strong id="insightStreak" class="insight-value">0 days</strong>
+          <span id="insightStreakSub" class="kpi-sub">Start a study session today</span>
+        </div>
+        <div class="card insight-card">
+          <div class="insight-head">
+            <svg class="insight-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6" />
+              <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18" />
+              <path d="M4 22h16" />
+              <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22" />
+              <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22" />
+              <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z" />
+            </svg>
+            <span class="kpi-label">Top Study Module</span>
+          </div>
+          <strong id="insightTopSubject" class="insight-value">—</strong>
+          <span id="insightTopSubjectSub" class="kpi-sub">No study sessions in range</span>
+        </div>
+        <div class="card insight-card">
+          <div class="insight-head">
+            <svg class="insight-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 3v18h18" />
+              <path d="M7 16v-4" />
+              <path d="M12 16V8" />
+              <path d="M17 16v-6" />
+            </svg>
+            <span class="kpi-label">Daily Average</span>
+          </div>
+          <strong id="insightDailyAvg" class="insight-value">0h 00m</strong>
+          <span id="insightDailyAvgSub" class="kpi-sub">Across last 7 days</span>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="card chart-card">
+          <div class="card-header">
+            <h2>Distribution</h2>
+            <div class="mini-toggle">
+              <button id="donutModeAll" class="mini-btn active" type="button">All Modules</button>
+              <button id="donutModeGroup" class="mini-btn" type="button">Groups</button>
+            </div>
+          </div>
+          <div class="donut-layout">
+            <canvas id="donutCanvas" width="220" height="220"></canvas>
+            <div id="donutLegend" class="legend-list"></div>
+          </div>
+        </div>
+
+        <div class="card chart-card">
+          <div class="card-header">
+            <h2>Study Modules Breakdown</h2>
+            <span id="studyTotalBadge" class="badge badge-study">0h 00m</span>
+          </div>
+          <div id="subjectBars" class="subject-bars"></div>
+        </div>
+      </div>
+
+      <div class="card chart-card">
+        <div class="card-header">
+          <h2>Daily Hours (Last 7 Days)</h2>
+          <span class="muted">Hover bars for exact breakdown</span>
+        </div>
+        <div class="bar-canvas-wrap">
+          <canvas id="dailyBarCanvas" width="760" height="240"></canvas>
+        </div>
+      </div>
+    </main>
+
+    <!-- VIEW 2: Log (Manual Entry + Session History) -->
+    <section id="viewLog" class="view-panel hidden" aria-label="Session log">
+      <div class="card manual-card">
+        <div class="card-header">
+          <h2>Add Manual Entry</h2>
+          <span class="muted">Log past sessions quickly</span>
+        </div>
+        <form id="manualForm" class="manual-inline-form">
+          <label class="field-cat">
+            <span>Module / Category</span>
+            <select id="manualCat" class="input"></select>
+          </label>
+          <label class="field-date">
+            <span>Date</span>
+            <input id="manualDate" type="date" class="input" required />
+          </label>
+          <label class="field-num">
+            <span>Hours</span>
+            <input id="manualHours" type="number" class="input" min="0" max="24" value="0" />
+          </label>
+          <label class="field-num">
+            <span>Min</span>
+            <input id="manualMinutes" type="number" class="input" min="0" max="59" value="30" />
+          </label>
+          <label class="field-note">
+            <span>Note</span>
+            <input id="manualNote" type="text" class="input" placeholder="Optional note" maxlength="120" />
+          </label>
+          <button type="submit" class="btn btn-primary manual-submit">Add</button>
+        </form>
+      </div>
+
+      <div class="card history-card">
+        <div class="card-header">
+          <h2>Session History</h2>
+          <div class="history-controls">
+            <select id="historyFilter" class="input input-sm" aria-label="Filter sessions"></select>
+          </div>
+        </div>
+
+        <div class="table-wrap">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Module / Category</th>
+                <th>Group</th>
+                <th>Duration</th>
+                <th>Note</th>
+                <th class="col-action">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="historyBody"></tbody>
+          </table>
+          <div id="emptyHistory" class="empty-state hidden">
+            No sessions recorded yet. Start the timer above or add a manual entry!
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VIEW 3: Goals -->
+    <section id="viewGoals" class="view-panel hidden" aria-label="Weekly goals">
+      <div class="card goals-card">
+        <div class="card-header">
+          <div>
+            <h2>Weekly Goals</h2>
+            <span class="muted">Target hours over the last 7 days</span>
+          </div>
+          <button id="toggleEditGoalsBtn" class="btn btn-ghost btn-sm" type="button">Edit Goals</button>
+        </div>
+        <div id="goalsProgressList" class="goals-grid"></div>
+        <form id="goalsForm" class="goals-form hidden">
+          <div class="form-row">
+            <label>
+              <span>Studying (hrs / wk)</span>
+              <input id="goalStudyInput" type="number" class="input" min="0" max="168" step="0.5" required />
+            </label>
+            <label>
+              <span>Work (hrs / wk)</span>
+              <input id="goalWorkInput" type="number" class="input" min="0" max="168" step="0.5" required />
+            </label>
+            <label>
+              <span>Free Time (hrs / wk)</span>
+              <input id="goalFreeInput" type="number" class="input" min="0" max="168" step="0.5" required />
+            </label>
+          </div>
+          <div class="goals-form-actions">
+            <button id="cancelEditGoalsBtn" type="button" class="btn btn-ghost btn-sm">Cancel</button>
+            <button type="submit" class="btn btn-primary btn-sm">Save Goals</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </div>
+
+  <!-- MODAL 1: Manage Modules & Categories -->
+  <div id="manageModulesModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="manageModulesTitle">
+    <div class="modal-card modal-card-wide">
+      <div class="card-header">
+        <div>
+          <h2 id="manageModulesTitle">Customize Modules &amp; Categories</h2>
+          <span class="muted">Define what you track under Studying, Work, and Free Time</span>
+        </div>
+        <button id="closeModulesModalBtn" type="button" class="icon-close-btn" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="presets-box">
+        <span class="drive-field-label">Quick Starter Presets</span>
+        <div class="preset-btns">
+          <button class="btn btn-secondary btn-sm preset-btn" data-preset="student" type="button">University Student</button>
+          <button class="btn btn-secondary btn-sm preset-btn" data-preset="developer" type="button">Developer / Work</button>
+          <button class="btn btn-secondary btn-sm preset-btn" data-preset="minimal" type="button">Minimal (Study / Work / Free)</button>
+        </div>
+      </div>
+
+      <form id="addModuleForm" class="add-module-form">
+        <div class="form-row">
+          <label>
+            <span>Group</span>
+            <select id="newModuleGroup" class="input">
+              <option value="Studying">Studying</option>
+              <option value="Work">Work</option>
+              <option value="Free Time">Free Time</option>
+            </select>
+          </label>
+          <label class="flex-2">
+            <span>Module / Category Name</span>
+            <input id="newModuleName" type="text" class="input" placeholder="e.g. Linear Algebra, Side Project, Gym" maxlength="40" required />
+          </label>
+        </div>
+        <div class="swatch-row">
+          <span class="drive-field-label">Accent Color</span>
+          <div id="moduleColorSwatches" class="color-swatches" role="radiogroup" aria-label="Accent color"></div>
+        </div>
+        <div class="add-module-actions">
+          <button type="submit" class="btn btn-primary btn-sm">+ Add Module</button>
+        </div>
+      </form>
+
+      <div id="modulesManagerList" class="modules-manager-list"></div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: Edit Session -->
+  <div id="editSessionModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="editModalTitle">
+    <div class="modal-card">
+      <div class="card-header">
+        <h2 id="editModalTitle">Edit Session</h2>
+        <button id="closeEditModalBtn" type="button" class="icon-close-btn" aria-label="Close modal">&times;</button>
+      </div>
+      <form id="editSessionForm" class="manual-form">
+        <input id="editSessionId" type="hidden" />
+        <div class="form-row">
+          <label>
+            <span>Module / Category</span>
+            <select id="editCat" class="input"></select>
+          </label>
+          <label>
+            <span>Date</span>
+            <input id="editDate" type="date" class="input" required />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            <span>Hours</span>
+            <input id="editHours" type="number" class="input" min="0" max="24" required />
+          </label>
+          <label>
+            <span>Minutes</span>
+            <input id="editMinutes" type="number" class="input" min="0" max="59" required />
+          </label>
+        </div>
+        <div class="form-row">
+          <label>
+            <span>Note</span>
+            <input id="editNote" type="text" class="input" placeholder="Optional note" maxlength="120" />
+          </label>
+        </div>
+        <div class="modal-actions">
+          <button id="cancelEditModalBtn" type="button" class="btn btn-ghost">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL 3: Data & Sync -->
+  <div id="dataSyncModal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="dataSyncTitle">
+    <div class="modal-card modal-card-wide">
+      <div class="card-header">
+        <div>
+          <h2 id="dataSyncTitle">Data &amp; Sync</h2>
+          <span class="muted">Automatic local saving, backups, and Google Drive sync</span>
+        </div>
+        <button id="closeDataSyncModalBtn" type="button" class="icon-close-btn" aria-label="Close modal">&times;</button>
+      </div>
+
+      <div class="drive-status-box">
+        <div class="drive-status-row">
+          <span class="muted">Storage Mode</span>
+          <strong id="driveModalStatusText">Local browser storage</strong>
+        </div>
+        <div class="drive-status-row">
+          <span class="muted">Last Cloud Sync</span>
+          <span id="driveLastSyncText" class="muted">Never</span>
+        </div>
+      </div>
+
+      <div class="backup-section">
+        <span class="drive-field-label">Backup &amp; Export</span>
+        <div class="backup-actions">
+          <button id="exportJsonBtn" class="btn btn-secondary btn-sm" type="button">Export JSON</button>
+          <label class="btn btn-secondary btn-sm file-btn">
+            Import JSON
+            <input id="importJsonInput" type="file" accept="application/json" hidden />
+          </label>
+          <button id="exportCsvBtn" class="btn btn-secondary btn-sm" type="button">Export CSV</button>
+          <button id="clearAllBtn" class="btn btn-danger-ghost btn-sm" type="button">Clear All</button>
+        </div>
+      </div>
+
+      <details class="setup-guide oauth-details">
+        <summary>Optional: Direct Browser Google Drive OAuth Sync</summary>
+        <div class="oauth-body">
+          <div id="driveOriginWarning" class="drive-banner drive-banner-warn hidden">
+            <strong>Localhost required:</strong> Launch via <strong>Start Time Tracker.bat</strong> (<code>http://localhost:8765</code>) to use direct OAuth or automatic <code>data.json</code> / Google Drive for Desktop sync.
+          </div>
+
+          <div class="drive-section">
+            <label class="drive-field-label" for="driveClientIdInput">Google OAuth Client ID</label>
+            <div class="drive-input-row">
+              <input
+                id="driveClientIdInput"
+                type="text"
+                class="input"
+                placeholder="1234567890-abcdef.apps.googleusercontent.com"
+                autocomplete="off"
+              />
+              <button id="saveDriveClientIdBtn" type="button" class="btn btn-secondary btn-sm">Save ID</button>
+            </div>
+          </div>
+
+          <label class="drive-toggle-row">
+            <input id="driveAutoSyncToggle" type="checkbox" checked />
+            <span>Auto-sync changes via OAuth (after 1.5s)</span>
+          </label>
+
+          <div class="drive-actions">
+            <button id="driveConnectBtn" type="button" class="btn btn-primary btn-sm">Connect with Google</button>
+            <button id="driveSyncNowBtn" type="button" class="btn btn-success btn-sm" disabled>Sync Now</button>
+            <button id="driveDisconnectBtn" type="button" class="btn btn-danger-ghost btn-sm hidden">Disconnect</button>
+          </div>
+
+          <ol class="setup-steps">
+            <li>Open <strong>Google Cloud Console</strong> (<code>console.cloud.google.com</code>) &rarr; create a project &rarr; enable <strong>Google Drive API</strong>.</li>
+            <li>Configure <strong>OAuth consent screen</strong> (External) &rarr; add your Gmail under <strong>Test users</strong>.</li>
+            <li>Create an <strong>OAuth client ID</strong> (Web application) with origin <code>http://localhost:8765</code> and paste it above.</li>
+          </ol>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <div id="chartTooltip" class="chart-tooltip hidden" role="tooltip"></div>
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
